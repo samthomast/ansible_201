@@ -1,0 +1,28 @@
+---
+- hosts: ubuntu
+  become: true
+  tasks:
+   - name: Add text block from a file
+     blockinfile: path=/home/ubuntu/sameer block="{{lookup('file', '/home/devopsadmin/ansible201/main.cf')}}" create=yes state=present
+
+   - name: Step-1 postfix config
+     blockinfile: path=/etc/postfix/main.cf block="{{lookup('file', '/home/devopsadmin/ansible201/main.cf')}}" create=yes state=present
+
+   - name: Step-2 Gmail username and password
+     copy:
+       src: /home/devopsadmin/ansible201/sasl_passwd
+       dest: /etc/postfix/sasl_passwd  # link to /path/to/file
+       follow: no
+
+   - name: Step-3 Fix permission and update postfix config to use sasl_passwd file
+     shell:
+       " sudo chmod 400 /etc/postfix/sasl_passwd && sudo postmap /etc/postfix/sasl_passwd "
+
+   - name: Step-4 validate certificates to avoid running into error
+     shell:
+       " cat /etc/ssl/certs/Thawte_Premium_Server_CA.pem | sudo tee -a /etc/postfix/cacert.pem "
+
+   - name: Step-5 reload postfix config for changes to take effect
+     shell:
+       " sudo /etc/init.d/postfix reload "
+
